@@ -498,7 +498,7 @@ function sendLocalNotification(title, body) {
         body: body,
         icon: 'assets/icon192.png',
         badge: 'assets/icon192.png',
-        vibrate:,
+        vibrate: [200, 100, 200],
         tag: `day-tracker-reminder-${Date.now()}`, // Unique tag lets multiple distinct reminders pile up nicely
         renotify: true
       });
