@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tracker-v1';
+const CACHE_NAME = 'tracker-v1'; // Leave this as v1 forever now!
 const ASSETS = [
   'index.html',
   'style.css',
@@ -13,6 +13,9 @@ self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS);
+    }).then(() => {
+      // FORCES THE NEW SERVICE WORKER TO TAKE OVER IMMEDIATELY
+      return self.skipWaiting();
     })
   );
 });
@@ -28,14 +31,18 @@ self.addEventListener('activate', (e) => {
           }
         })
       );
+    }).then(() => {
+      // CLAIMS ALL OPEN TABS IMMEDIATELY SO THE NEW CODE APPLIES
+      return self.clients.claim();
     })
   );
 });
 
-// Cache Fetch Interceptor fallbacks
+// Cache-First Fetch Interceptor with a network fallback safety
 self.addEventListener('fetch', (e) => {
   e.respondWith(
     caches.match(e.request).then((cachedResponse) => {
+      // If found in cache, return it. Otherwise, fetch from live server.
       return cachedResponse || fetch(e.request);
     })
   );

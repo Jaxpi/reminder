@@ -41,11 +41,36 @@ const dayCheckboxes = document.querySelectorAll(
 const closeModalBtn = document.getElementById("close-modal-btn");
 
 // ==========================================
-// 3. SERVICE WORKER REGISTRATION
+// 3. AUTOMATED SERVICE WORKER REGISTRATION
 // ==========================================
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("sw.js").catch((err) => console.log(err));
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js')
+      .then((reg) => {
+        // Check for background updates on every single app launch
+        reg.update();
+
+        // Listen for the new service worker taking over
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          newWorker.addEventListener('statechange', () => {
+            // When the new code finishes installing, force an instant reload
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              window.location.reload();
+            }
+          });
+        });
+      })
+      .catch(err => console.log('Service Worker Registration Failed:', err));
+  });
+
+  // Handle sudden controller updates cleanly across open tabs
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!refreshing) {
+      refreshing = true;
+      window.location.reload();
+    }
   });
 }
 
