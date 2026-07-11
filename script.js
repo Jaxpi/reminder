@@ -73,18 +73,27 @@ if ('serviceWorker' in navigator) {
 // 4. EVENT LISTENERS & HOOK INTERACTION LOGIC
 // ==========================================
 
-// Check current Notification permission state on startup initialization
+// Safe initialization check for Notification API availability
 if ('Notification' in window) {
   if (Notification.permission === 'granted') {
     notificationToggleBtn.innerText = '🔔 On';
-    notificationToggleBtn.style.backgroundColor = '#10b981';
+    notificationToggleBtn.style.backgroundColor = '#10b981'; // Green active state
+    notificationToggleBtn.style.color = 'white';
+  } else if (Notification.permission === 'denied') {
+    notificationToggleBtn.innerText = '🔔 Blocked';
+    notificationToggleBtn.style.backgroundColor = '#ef4444'; // Red blocked state
+    notificationToggleBtn.style.color = 'white';
   }
+} else {
+  // If running on an insecure http:// testing network or unsupported browser
+  notificationToggleBtn.innerText = '🔔 N/A';
+  notificationToggleBtn.style.opacity = '0.5';
 }
 
 // Request System Permissions on User Touch Interaction
 notificationToggleBtn.addEventListener('click', () => {
   if (!('Notification' in window)) {
-    alert('Notifications are not supported on this browser or device.');
+    alert('Notifications are not supported on this browser connection. (Requires a secure HTTPS connection).');
     return;
   }
 
@@ -92,12 +101,14 @@ notificationToggleBtn.addEventListener('click', () => {
     if (permission === 'granted') {
       notificationToggleBtn.innerText = '🔔 On';
       notificationToggleBtn.style.backgroundColor = '#10b981';
+      notificationToggleBtn.style.color = 'white';
       sendLocalNotification('Notifications Enabled', 'Day Tracker will keep you updated on your buttons!');
       updateAppBadgeCount();
     } else {
       notificationToggleBtn.innerText = '🔔 Off';
       notificationToggleBtn.style.backgroundColor = 'rgba(255,255,255,0.2)';
-      alert('Notification permissions were denied. Please reset permissions in your settings.');
+      notificationToggleBtn.style.color = 'white';
+      alert('Notification permissions were denied or dismissed.');
     }
   });
 });

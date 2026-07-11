@@ -341,4 +341,15 @@ header {
   font-weight: bold;
 }
 
+/* Style adjustment for the notification button styling theme continuity */
+#notification-toggle-btn {
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
 .hidden { display: none !important; }
