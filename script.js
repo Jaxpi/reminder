@@ -1,267 +1,468 @@
-// Local Persistence Keys
-let tasks = JSON.parse(localStorage.getItem('pwa_tasks')) || [];
-let history = JSON.parse(localStorage.getItem('pwa_history')) || [];
+// ==========================================
+// 1. STATE ARRAYS & STORAGE KEYS
+// ==========================================
+let tasks = JSON.parse(localStorage.getItem("pwa_tasks")) || [];
+let history = JSON.parse(localStorage.getItem("pwa_history")) || [];
 let isHistoryExpanded = false;
+let isEditModeActive = false; // Tracks if edit mode toggle is turned on
 
-// DOM Hook Points
-const taskModal = document.getElementById('task-modal');
-const taskForm = document.getElementById('task-form');
-const buttonsContainer = document.getElementById('buttons-container');
-const historyLog = document.getElementById('history-log');
-const historyToggleHeader = document.getElementById('history-toggle-header');
-const toggleArrow = document.getElementById('toggle-arrow');
+// ==========================================
+// 2. DOM HOOK POINTS & ELEMENT REFERENCES
+// ==========================================
+const taskModal = document.getElementById("task-modal");
+const modalHeading = document.getElementById("modal-heading");
+const taskForm = document.getElementById("task-form");
+const editTaskIdInput = document.getElementById("edit-task-id");
+const deleteTaskBtn = document.getElementById("delete-task-btn");
+const buttonsContainer = document.getElementById("buttons-container");
+const historyLog = document.getElementById("history-log");
+const historyToggleHeader = document.getElementById("history-toggle-header");
+const toggleArrow = document.getElementById("toggle-arrow");
+const editModeToggle = document.getElementById("edit-mode-toggle");
 
 // Form Element Hooks
-const taskTimeText = document.getElementById('task-time-text');
-const clockTriggerBtn = document.getElementById('clock-trigger-btn');
-const hiddenClockInput = document.getElementById('hidden-clock-input');
-const untilToggleBtn = document.getElementById('until-toggle-btn');
-const hiddenUntilDate = document.getElementById('hidden-until-date');
-const selectedUntilSpan = document.getElementById('selected-until-span');
-const dailyCheckbox = document.getElementById('daily-checkbox');
-const dayCheckboxes = document.querySelectorAll('.days-checkboxes input[type="checkbox"]:not(#daily-checkbox)');
-const closeModalBtn = document.getElementById('close-modal-btn');
+const taskTimeText = document.getElementById("task-time-text");
+const clockTriggerBtn = document.getElementById("clock-trigger-btn");
+const hiddenClockInput = document.getElementById("hidden-clock-input");
+const timeSuggestions = document.getElementById("time-suggestions");
 
-// PWA Service Worker Hook Registration
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(err => console.log(err));
+const startToggleBtn = document.getElementById("start-toggle-btn");
+const hiddenStartDate = document.getElementById("hidden-start-date");
+const selectedStartSpan = document.getElementById("selected-start-span");
+
+const untilToggleBtn = document.getElementById("until-toggle-btn");
+const hiddenUntilDate = document.getElementById("hidden-until-date");
+const selectedUntilSpan = document.getElementById("selected-until-span");
+
+const dailyCheckbox = document.getElementById("daily-checkbox");
+const dayCheckboxes = document.querySelectorAll(
+  '.days-checkboxes input[type="checkbox"]:not(#daily-checkbox)',
+);
+const closeModalBtn = document.getElementById("close-modal-btn");
+
+// ==========================================
+// 3. SERVICE WORKER REGISTRATION
+// ==========================================
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch((err) => console.log(err));
   });
 }
 
-// Collapsible History Event Log Trigger
-historyToggleHeader.addEventListener('click', () => {
+// ==========================================
+// 4. EVENT LISTENERS & SUGGESTIONS LOGIC
+// ==========================================
+
+// Edit Mode Global Toggle
+editModeToggle.addEventListener("click", () => {
+  isEditModeActive = !isEditModeActive;
+  if (isEditModeActive) {
+    editModeToggle.innerText = "Edit Mode: On";
+    editModeToggle.className = "toggle-btn-active";
+  } else {
+    editModeToggle.innerText = "Edit Mode: Off";
+    editModeToggle.className = "toggle-btn-inactive";
+  }
+  renderDailyButtons(); // Re-render to update click targets and add shake animation
+});
+
+// Collapsible History Log Trigger
+historyToggleHeader.addEventListener("click", () => {
   isHistoryExpanded = !isHistoryExpanded;
   if (isHistoryExpanded) {
-    historyLog.classList.remove('hidden');
-    toggleArrow.innerText = '▼';
+    historyLog.classList.remove("hidden");
+    toggleArrow.innerText = "▼";
   } else {
-    historyLog.classList.add('hidden');
-    toggleArrow.innerText = '►';
+    historyLog.classList.add("hidden");
+    toggleArrow.innerText = "►";
   }
 });
 
-// Trigger native clock picker when clicking the icon button
-clockTriggerBtn.addEventListener('click', () => {
-  hiddenClockInput.showPicker(); 
-});
-hiddenClockInput.addEventListener('change', (e) => {
-  if(e.target.value) {
-    taskTimeText.value = e.target.value; 
+// Unified Listener for Mobile Time Suggestions
+document.addEventListener("click", (e) => {
+  if (taskTimeText.contains(e.target)) {
+    timeSuggestions.classList.remove("hidden");
+    return;
+  }
+  if (e.target.classList.contains("chip")) {
+    taskTimeText.value = e.target.innerText;
+    timeSuggestions.classList.add("hidden");
+    taskTimeText.blur();
+    return;
+  }
+  if (
+    !timeSuggestions.contains(e.target) &&
+    !clockTriggerBtn.contains(e.target)
+  ) {
+    timeSuggestions.classList.add("hidden");
   }
 });
 
-// Trigger native calendar picker when clicking the "Until" button
-untilToggleBtn.addEventListener('click', () => {
+clockTriggerBtn.addEventListener("click", () => {
+  hiddenClockInput.showPicker();
+});
+hiddenClockInput.addEventListener("change", (e) => {
+  if (e.target.value) taskTimeText.value = e.target.value;
+});
+
+startToggleBtn.addEventListener("click", () => {
+  hiddenStartDate.showPicker();
+});
+hiddenStartDate.addEventListener("change", (e) => {
+  if (e.target.value) {
+    selectedStartSpan.innerText = e.target.value;
+    selectedStartSpan.classList.remove("hidden");
+  } else {
+    selectedStartSpan.classList.add("hidden");
+  }
+});
+
+untilToggleBtn.addEventListener("click", () => {
   hiddenUntilDate.showPicker();
 });
-hiddenUntilDate.addEventListener('change', (e) => {
-  if(e.target.value) {
+hiddenUntilDate.addEventListener("change", (e) => {
+  if (e.target.value) {
     selectedUntilSpan.innerText = e.target.value;
-    selectedUntilSpan.classList.remove('hidden');
+    selectedUntilSpan.classList.remove("hidden");
   } else {
-    selectedUntilSpan.classList.add('hidden');
+    selectedUntilSpan.classList.add("hidden");
   }
 });
 
-// "Daily" Checkbox master toggle behavior
-dailyCheckbox.addEventListener('change', (e) => {
-  const isChecked = e.target.checked;
-  dayCheckboxes.forEach(cb => cb.checked = isChecked);
+dailyCheckbox.addEventListener("change", (e) => {
+  dayCheckboxes.forEach((cb) => (cb.checked = e.target.checked));
 });
-
-// If any day checkbox is manually unchecked, turn off the Daily toggle status
-dayCheckboxes.forEach(cb => {
-  cb.addEventListener('change', () => {
-    if (!cb.checked) {
-      dailyCheckbox.checked = false;
-    } else {
-      const allChecked = Array.from(dayCheckboxes).every(item => item.checked);
-      if (allChecked) dailyCheckbox.checked = true;
-    }
+dayCheckboxes.forEach((cb) => {
+  cb.addEventListener("change", () => {
+    dailyCheckbox.checked = Array.from(dayCheckboxes).every(
+      (item) => item.checked,
+    );
   });
 });
 
-closeModalBtn.addEventListener('click', () => {
-  taskModal.classList.add('hidden');
+closeModalBtn.addEventListener("click", () => {
+  taskModal.classList.add("hidden");
   resetFormState();
 });
 
 function resetFormState() {
   taskForm.reset();
-  selectedUntilSpan.innerText = '';
-  selectedUntilSpan.classList.add('hidden');
+  editTaskIdInput.value = "";
+  modalHeading.innerText = "task";
+  deleteTaskBtn.classList.add("hidden");
+  selectedUntilSpan.innerText = "";
+  selectedUntilSpan.classList.add("hidden");
+  selectedStartSpan.innerText = "";
+  selectedStartSpan.classList.add("hidden");
+  timeSuggestions.classList.add("hidden");
 }
 
-// Save logic handling data creation rules
-taskForm.addEventListener('submit', (e) => {
-  e.preventDefault();
-  
-  const title = document.getElementById('task-title').value;
-  const timeValue = taskTimeText.value;
-  const checkedDays = Array.from(dayCheckboxes).filter(cb => cb.checked).map(cb => parseInt(cb.value));
-  const untilDate = hiddenUntilDate.value || null;
+// ==========================================
+// 5. FIXED DATE COMPARISONS
+// ==========================================
+function isTaskScheduledForDate(task, targetDate) {
+  const dayOfWeek = targetDate.getDay();
+  const targetYear = targetDate.getFullYear();
+  const targetMonth = targetDate.getMonth() + 1;
+  const targetDay = targetDate.getDate();
 
-  const newTask = {
-    id: Date.now().toString(),
-    title,
-    timeValue,
-    days: checkedDays, 
-    untilDate: untilDate,
-    order: tasks.length // Append to bottom sequence stack initially
-  };
-
-  tasks.push(newTask);
-  saveTasks();
-  resetFormState();
-  taskModal.classList.add('hidden');
-  renderDailyButtons();
-});
-
-function saveTasks() {
-  localStorage.setItem('pwa_tasks', JSON.stringify(tasks));
-}
-
-// Utility: Local timezone safe string parse rules
-function getLocalDateString(date = new Date()) {
-  const offset = date.getTimezoneOffset();
-  const adjustedDate = new Date(date.getTime() - (offset * 60 * 1000));
-  return adjustedDate.toISOString().split('T')[0];
-}
-
-function isTaskScheduledForDate(task, date) {
-  const dayOfWeek = date.getDay();
-  const todayStr = getLocalDateString(date);
-
-  // Filter 1: If an "Until Date" constraint exists, confirm it hasn't expired
-  if (task.untilDate && todayStr > task.untilDate) {
-    return false;
+  function parseDateString(str) {
+    if (!str) return null;
+    const parts = str.split("-");
+    return {
+      year: parseInt(parts[0]), // FIXED: now properly checks indices
+      month: parseInt(parts[1]),
+      day: parseInt(parts[2]),
+    };
   }
-  // Filter 2: Verify day array inclusion requirements
+
+  if (task.startDate) {
+    const start = parseDateString(task.startDate);
+    if (start) {
+      if (targetYear < start.year) return false;
+      if (targetYear === start.year && targetMonth < start.month) return false;
+      if (
+        targetYear === start.year &&
+        targetMonth === start.month &&
+        targetDay < start.day
+      )
+        return false;
+    }
+  }
+
+  if (task.untilDate) {
+    const until = parseDateString(task.untilDate);
+    if (until) {
+      if (targetYear > until.year) return false;
+      if (targetYear === until.year && targetMonth > until.month) return false;
+      if (
+        targetYear === until.year &&
+        targetMonth === until.month &&
+        targetDay > until.day
+      )
+        return false;
+    }
+  }
+
   if (task.days && task.days.length > 0) {
     return task.days.includes(dayOfWeek);
   }
-  return true; // Absolute default fallback
+  return true;
+}
+// ==========================================
+// 6. SAVE, UPDATE & DELETE TASK FORM HANDLERS
+// ==========================================
+
+taskForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+
+  const title = document.getElementById("task-title").value;
+  const timeValue = taskTimeText.value;
+  const checkedDays = Array.from(dayCheckboxes)
+    .filter((cb) => cb.checked)
+    .map((cb) => parseInt(cb.value));
+  const startDate = hiddenStartDate.value || null;
+  const untilDate = hiddenUntilDate.value || null;
+  const targetId = editTaskIdInput.value;
+
+  if (targetId) {
+    // Editing Mode: Update the existing configuration details
+    const taskIndex = tasks.findIndex((t) => t.id === targetId);
+    if (taskIndex !== -1) {
+      tasks[taskIndex].title = title;
+      tasks[taskIndex].timeValue = timeValue;
+      tasks[taskIndex].days = checkedDays;
+      tasks[taskIndex].startDate = startDate;
+      tasks[taskIndex].untilDate = untilDate;
+    }
+  } else {
+    // Creation Mode: Package and insert a completely new task object
+    const newTask = {
+      id: Date.now().toString(),
+      title,
+      timeValue,
+      days: checkedDays,
+      startDate: startDate, // YYYY-MM-DD
+      untilDate: untilDate, // YYYY-MM-DD
+      order: tasks.length,
+    };
+    tasks.push(newTask);
+  }
+
+  saveTasks();
+  resetFormState();
+  taskModal.classList.add("hidden");
+  renderDailyButtons();
+});
+
+// Direct deletion logic inside the editing form window
+deleteTaskBtn.addEventListener("click", () => {
+  const targetId = editTaskIdInput.value;
+  if (!targetId) return;
+
+  if (confirm("Are you sure you want to delete this task completely?")) {
+    // 1. Strip the task entry out of the configurations array
+    tasks = tasks.filter((t) => t.id !== targetId);
+
+    // 2. Wipe any history tracking markers tied directly to this specific id
+    history = history.filter((h) => h.taskId !== targetId);
+
+    // 3. Commit changes to storage registries and refresh UI view modules
+    saveTasks();
+    localStorage.setItem("pwa_history", JSON.stringify(history));
+    resetFormState();
+    taskModal.classList.add("hidden");
+    renderDailyButtons();
+    renderHistoryLog();
+  }
+});
+
+function saveTasks() {
+  localStorage.setItem("pwa_tasks", JSON.stringify(tasks));
 }
 
-// Render Core Task Dashboard Grid
+// Utility: Timezone-safe local ISO calendar generation helper
+function getLocalDateString(date = new Date()) {
+  const offset = date.getTimezoneOffset();
+  const adjustedDate = new Date(date.getTime() - offset * 60 * 1000);
+  return adjustedDate.toISOString().split("T")[0];
+}
+
+// ==========================================
+// 7. RENDER LOGIC (GRID & HISTORY)
+// ==========================================
+
 function renderDailyButtons() {
-  buttonsContainer.innerHTML = '';
+  buttonsContainer.innerHTML = "";
   const today = new Date();
   const todayStr = getLocalDateString(today);
 
-  // Always keep configurations aligned with persistent order priorities
+  // Keep arrays sorted according to user drag order indices
   tasks.sort((a, b) => (a.order || 0) - (b.order || 0));
 
-  // Render valid daily task assignments
-  tasks.forEach(task => {
+  tasks.forEach((task) => {
     if (!isTaskScheduledForDate(task, today)) return;
 
-    const btn = document.createElement('div');
-    btn.className = 'task-btn';
-    btn.setAttribute('draggable', 'true');
-    btn.setAttribute('data-id', task.id);
-    
-    const isDoneToday = history.some(h => h.taskId === task.id && h.date === todayStr);
-    btn.classList.add(isDoneToday ? 'completed' : 'active');
+    const btn = document.createElement("div");
+    btn.className = "task-btn";
+    btn.setAttribute("data-id", task.id);
+
+    // Disable dragging mechanics if user is explicitly editing configurations
+    if (!isEditModeActive) {
+      btn.setAttribute("draggable", "true");
+    } else {
+      btn.classList.add("editing-shake");
+    }
+
+    const isDoneToday = history.some(
+      (h) => h.taskId === task.id && h.date === todayStr,
+    );
+    btn.classList.add(isDoneToday ? "completed" : "active");
 
     btn.innerHTML = `
       <div>${task.title}</div>
       <div class="time-lbl">${task.timeValue}</div>
     `;
 
-    // Click/Tap toggle events handling
-    btn.addEventListener('click', (e) => {
-      // Ignore click processing during moving sequence cycles
-      if (btn.classList.contains('dragging')) return;
+    // Dynamic Touch Matrix Redirector routing click behaviors
+    btn.addEventListener("click", () => {
+      if (btn.classList.contains("dragging")) return;
 
-      if (isDoneToday) {
-        history = history.filter(h => !(h.taskId === task.id && h.date === todayStr));
-      } else {
-        history.push({
-          id: Date.now().toString(),
-          taskId: task.id,
-          taskTitle: task.title,
-          date: todayStr,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      // Locate this block inside the click listener in Part 2 and replace it:
+      if (isEditModeActive) {
+        // Edit Mode Is ON: Populate the form for modifications
+        modalHeading.innerText = "Edit Task";
+        editTaskIdInput.value = task.id;
+        document.getElementById("task-title").value = task.title;
+        taskTimeText.value = task.timeValue;
+
+        // Safe Fallback: Ensure task.days exists before calling includes()
+        const activeDays = task.days || [];
+
+        // Match day checkboxes state entries back to the form properties
+        dayCheckboxes.forEach((cb) => {
+          cb.checked = activeDays.includes(parseInt(cb.value));
         });
+        dailyCheckbox.checked = Array.from(dayCheckboxes).every(
+          (item) => item.checked,
+        );
+
+        // Match optional Date pickers state strings
+        if (task.startDate) {
+          hiddenStartDate.value = task.startDate;
+          selectedStartSpan.innerText = task.startDate;
+          selectedStartSpan.classList.remove("hidden");
+        }
+        if (task.untilDate) {
+          hiddenUntilDate.value = task.untilDate;
+          selectedUntilSpan.innerText = task.untilDate;
+          selectedUntilSpan.classList.remove("hidden");
+        }
+
+        deleteTaskBtn.classList.remove("hidden");
+        taskModal.classList.remove("hidden");
+      } else {
+        // Edit Mode Is OFF: Function normally as a checklist logger
+        if (isDoneToday) {
+          history = history.filter(
+            (h) => !(h.taskId === task.id && h.date === todayStr),
+          );
+        } else {
+          history.push({
+            id: Date.now().toString(),
+            taskId: task.id,
+            taskTitle: task.title,
+            date: todayStr,
+            timestamp: new Date().toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+          });
+        }
+        localStorage.setItem("pwa_history", JSON.stringify(history));
+        renderDailyButtons();
+        renderHistoryLog();
       }
-      localStorage.setItem('pwa_history', JSON.stringify(history));
-      renderDailyButtons();
-      renderHistoryLog();
     });
 
-    // Attach native Drag & Drop processing listeners
-    btn.addEventListener('dragstart', () => btn.classList.add('dragging'));
-    btn.addEventListener('dragend', () => btn.classList.remove('dragging'));
+    if (!isEditModeActive) {
+      btn.addEventListener("dragstart", () => btn.classList.add("dragging"));
+      btn.addEventListener("dragend", () => btn.classList.remove("dragging"));
+    }
 
     buttonsContainer.appendChild(btn);
   });
 
-  // Always insert the Green creation button at the tail position of the grid layout
-  const createBtn = document.createElement('div');
-  createBtn.className = 'create-btn';
+  // Green Create Button
+  const createBtn = document.createElement("div");
+  createBtn.className = "create-btn";
   createBtn.innerHTML = `
     <div style="font-size: 1.8rem; margin-bottom: 0.2rem;">+</div>
     <div>Add</div>
   `;
-  createBtn.addEventListener('click', () => taskModal.classList.remove('hidden'));
+  createBtn.addEventListener("click", () => {
+    resetFormState();
+    modalHeading.innerText = "Task";
+    taskModal.classList.remove("hidden");
+  });
   buttonsContainer.appendChild(createBtn);
 
-  initDragAndDropListeners();
+  if (!isEditModeActive) {
+    initDragAndDropListeners();
+  }
 }
 
-// Drag & Drop tracking reorder implementation mechanics
 function initDragAndDropListeners() {
-  buttonsContainer.addEventListener('dragover', (e) => {
+  buttonsContainer.addEventListener("dragover", (e) => {
     e.preventDefault();
-    const draggingEl = document.querySelector('.task-btn.dragging');
+    const draggingEl = document.querySelector(".task-btn.dragging");
     if (!draggingEl) return;
 
-    // Detect grid siblings bounding bounds excluding the green creation tile
-    const siblings = Array.from(buttonsContainer.querySelectorAll('.task-btn:not(.dragging)'));
-    
-    const nextSibling = siblings.find(sibling => {
+    const siblings = Array.from(
+      buttonsContainer.querySelectorAll(".task-btn:not(.dragging)"),
+    );
+
+    const nextSibling = siblings.find((sibling) => {
       const box = sibling.getBoundingClientRect();
-      // Evaluate drag positioning vectors against item cross centers
-      return (e.clientX < box.left + box.width / 2) && (e.clientY < box.top + box.height / 2) || (e.clientY < box.bottom && e.clientX < box.right);
+      return (
+        (e.clientX < box.left + box.width / 2 &&
+          e.clientY < box.top + box.height / 2) ||
+        (e.clientY < box.bottom && e.clientX < box.right)
+      );
     });
 
     if (nextSibling) {
       buttonsContainer.insertBefore(draggingEl, nextSibling);
     } else {
-      // Place before creation button node elements safety checks
-      const createTile = buttonsContainer.querySelector('.create-btn');
+      const createTile = buttonsContainer.querySelector(".create-btn");
       buttonsContainer.insertBefore(draggingEl, createTile);
     }
   });
 
-  buttonsContainer.addEventListener('drop', () => {
-    // Re-index application data arrays following screen layout sequences
-    const currentRenderedButtons = Array.from(buttonsContainer.querySelectorAll('.task-btn'));
-    
+  buttonsContainer.addEventListener("drop", () => {
+    const currentRenderedButtons = Array.from(
+      buttonsContainer.querySelectorAll(".task-btn"),
+    );
     currentRenderedButtons.forEach((btn, idx) => {
-      const id = btn.getAttribute('data-id');
-      const targetTask = tasks.find(t => t.id === id);
+      const id = btn.getAttribute("data-id");
+      const targetTask = tasks.find((t) => t.id === id);
       if (targetTask) targetTask.order = idx;
     });
-
     saveTasks();
   });
 }
 
-// Display completion events tracking logs (Newest / Most recent at top position)
 function renderHistoryLog() {
-  historyLog.innerHTML = '';
+  historyLog.innerHTML = "";
   if (history.length === 0) {
-    historyLog.innerHTML = '<p style="color:#666; margin: 0;">No item tasks logged yet.</p>';
+    historyLog.innerHTML =
+      '<p style="color:#666; margin: 0;">No items logged yet.</p>';
     return;
   }
 
-  // Slice copies to avoid modifying root values when calling reverse iterations
-  [...history].reverse().forEach(item => {
-    const itemEl = document.createElement('div');
-    itemEl.className = 'history-item';
+  [...history].reverse().forEach((item) => {
+    const itemEl = document.createElement("div");
+    itemEl.className = "history-item";
     itemEl.innerHTML = `
       <div>
         <strong>${item.taskTitle}</strong> - ${item.date} @ ${item.timestamp}
@@ -272,14 +473,15 @@ function renderHistoryLog() {
   });
 }
 
-// Global hook execution wrapper mapping deletion commands back safely
-window.deleteHistoryItem = function(id) {
-  history = history.filter(h => h.id !== id);
-  localStorage.setItem('pwa_history', JSON.stringify(history));
+window.deleteHistoryItem = function (id) {
+  history = history.filter((h) => h.id !== id);
+  localStorage.setItem("pwa_history", JSON.stringify(history));
   renderDailyButtons();
   renderHistoryLog();
 };
 
-// Application Init Sequence
+// ==========================================
+// 8. INITIAL STARTUP SEQUENCES
+// ==========================================
 renderDailyButtons();
 renderHistoryLog();

@@ -11,13 +11,15 @@
 <body>
   <header>
     <h1>Day Tracker</h1>
+    <!-- Toggle switch for Edit Mode -->
+    <button id="edit-mode-toggle" class="toggle-btn-inactive">Edit Mode: Off</button>
   </header>
 
   <main>
-    <!-- Today's View Dashboard Grid -->
+    <!-- Today's View Grid -->
     <section id="daily-view-section">
       <div id="buttons-container">
-        <!-- Task buttons and the Green creation button render here -->
+        <!-- Active task buttons and the Green creation button render here dynamically -->
       </div>
     </section>
 
@@ -30,24 +32,39 @@
     </section>
   </main>
 
-  <!-- Streamlined Task Creation Modal -->
+  <!-- Streamlined Task Creation/Editing Modal -->
   <div id="task-modal" class="modal hidden">
     <div class="modal-content">
-      <h3>New</h3>
+      <h3 id="modal-heading">Task</h3>
       <form id="task-form">
+        <!-- Hidden input to store task ID when editing -->
+        <input type="hidden" id="edit-task-id">
+
         <!-- ROW 1: Title -->
         <div class="form-row">
           <label for="task-title">Title</label>
           <input type="text" id="task-title" required placeholder="e.g., Take Medicine">
         </div>
 
-        <!-- ROW 2: Time (Text input + native clock picker button overlay) -->
+        <!-- ROW 2: Time -->
         <div class="form-row">
           <label for="task-time-text">Time</label>
           <div class="time-picker-wrapper">
-            <input type="text" id="task-time-text" required placeholder="e.g., Morning or 08:00">
+            <input type="text" id="task-time-text" required placeholder="e.g., Morning or 08:00" autocomplete="off">
             <button type="button" id="clock-trigger-btn" title="Choose specific clock time">⏰</button>
             <input type="time" id="hidden-clock-input" class="hidden-picker">
+          </div>
+          <!-- Thumb-friendly mobile suggestions grid -->
+          <div id="time-suggestions" class="suggestions-box hidden">
+            <button type="button" class="chip">Morning</button>
+            <button type="button" class="chip">After Waking</button>
+            <button type="button" class="chip">Breakfast</button>
+            <button type="button" class="chip">Midday</button>
+            <button type="button" class="chip">Lunch</button>
+            <button type="button" class="chip">Evening</button>
+            <button type="button" class="chip">Dinner</button>
+            <button type="button" class="chip">Night</button>
+            <button type="button" class="chip">Before Sleeping</button>
           </div>
         </div>
 
@@ -66,15 +83,27 @@
               <label class="chk-lbl daily-label"><input type="checkbox" id="daily-checkbox"> Daily</label>
             </div>
             
-            <div class="until-date-wrapper">
-              <button type="button" id="until-toggle-btn" class="btn-small">Until</button>
-              <input type="date" id="hidden-until-date" class="hidden-picker">
-              <span id="selected-until-span" class="hidden"></span>
+            <div class="date-bounds-wrapper" style="margin-top: 0.6rem; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;">
+              <!-- Start Date Element -->
+              <div class="date-btn-group">
+                <button type="button" id="start-toggle-btn" class="btn-small">Start</button>
+                <input type="date" id="hidden-start-date" class="hidden-picker">
+                <span id="selected-start-span" class="date-badge hidden"></span>
+              </div>
+
+              <!-- Until Date Element -->
+              <div class="date-btn-group">
+                <button type="button" id="until-toggle-btn" class="btn-small">Until</button>
+                <input type="date" id="hidden-until-date" class="hidden-picker">
+                <span id="selected-until-span" class="date-badge hidden"></span>
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="modal-actions">
+        <div class="modal-actions" id="modal-actions-container">
+          <button type="button" id="delete-task-btn" class="btn-danger hidden">Delete Task</button>
+          <div style="flex-grow: 1;"></div>
           <button type="button" id="close-modal-btn" class="btn-secondary">Cancel</button>
           <button type="submit" class="btn-primary">Save</button>
         </div>

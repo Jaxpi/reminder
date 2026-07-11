@@ -241,4 +241,104 @@ h2 { margin-top: 0; border-bottom: 2px solid var(--bg-color); padding-bottom: 0.
   font-size: 0.75rem;
 }
 
+/* Mobile Time Suggestion Grid Container */
+.suggestions-box {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
+  background: #f3f4f6;
+  padding: 0.5rem;
+  border-radius: 6px;
+  margin-top: 0.4rem;
+  border: 1px solid #e5e7eb;
+  max-height: 130px;
+  overflow-y: auto;
+}
+
+/* Thumb-friendly mobile suggestion chips */
+.suggestions-box .chip {
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 20px;
+  padding: 0.4rem 0.2rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  text-align: center;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+.suggestions-box .chip:active {
+  background: #e0f2fe;
+  border-color: #7dd3fc;
+  color: #0369a1;
+}
+
+/* Date wrappers adjustment */
+.date-btn-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.date-badge {
+  font-size: 0.75rem;
+  color: #374151;
+  background: #e5e7eb;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  border: 1px solid #d1d5db;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Edit Mode Toggle Styles */
+#edit-mode-toggle {
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.toggle-btn-inactive {
+  background-color: rgba(255,255,255,0.2);
+  color: white;
+  border: 1px solid white !important;
+}
+.toggle-btn-active {
+  background-color: #ef4444 !important;
+  color: white !important;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+}
+
+/* Visual change for tasks when in Edit Mode */
+.task-btn.editing-shake {
+  border: 2px dashed #ef4444 !important;
+  animation: gentle-shake 0.3s infinite alternate;
+}
+
+@keyframes gentle-shake {
+  0% { transform: rotate(-1deg); }
+  100% { transform: rotate(1deg); }
+}
+
+.btn-danger {
+  background-color: #ef4444;
+  color: white;
+  border: none;
+  padding: 0.45rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
 .hidden { display: none !important; }
