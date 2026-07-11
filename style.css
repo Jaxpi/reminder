@@ -2,7 +2,7 @@
   --primary-color: #2563eb;
   --success-color: #10b981;
   --success-hover: #059669;
-  --bg-color: #f3f4f6;
+  --bg-color: #000000;
   --card-bg: #ffffff;
   --text-color: #1f2937;
 }
@@ -92,7 +92,7 @@ h2 { margin-top: 0; border-bottom: 2px solid var(--bg-color); padding-bottom: 0.
 
 /* Completed Flat State (Gray) */
 .task-btn.completed {
-  background: #e5e7eb;
+  background: #d3d3d3;
   color: #71717a;
   border: 1px solid #d1d5db;
   box-shadow: none;
