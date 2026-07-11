@@ -1,0 +1,147 @@
+:root {
+  --primary-color: #2563eb;
+  --primary-hover: #1d4ed8;
+  --completed-color: #9ca3af;
+  --bg-color: #f3f4f6;
+  --card-bg: #ffffff;
+  --text-color: #1f2937;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  margin: 0;
+  padding: 0;
+}
+
+header {
+  background-color: var(--primary-color);
+  color: white;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+header h1 { margin: 0; font-size: 1.5rem; }
+
+main {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+section {
+  background: var(--card-bg);
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  margin-bottom: 2rem;
+}
+
+h2 { margin-top: 0; border-bottom: 2px solid var(--bg-color); padding-bottom: 0.5rem; }
+
+#open-modal-btn {
+  background-color: white;
+  color: var(--primary-color);
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* 3D and Flat Toggle Task Buttons */
+#buttons-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.task-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  border-radius: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.1s ease;
+  text-align: center;
+}
+
+/* Active 3D State (Blue) */
+.task-btn.active {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+  border: 1px solid #1d4ed8;
+  box-shadow: 0 6px 0 #1e40af, 0 8px 15px rgba(0,0,0,0.2);
+  transform: translateY(-4px);
+}
+.task-btn.active:active {
+  transform: translateY(2px);
+  box-shadow: 0 0px 0 #1e40af, 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* Completed Flat State (Gray) */
+.task-btn.completed {
+  background: #e5e7eb;
+  color: #71717a;
+  border: 1px solid #d1d5db;
+  box-shadow: none;
+  transform: translateY(0);
+}
+
+.task-btn .time-lbl {
+  font-size: 0.8rem;
+  opacity: 0.8;
+  margin-top: 0.5rem;
+}
+
+/* History logs layout */
+.history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+.history-item button {
+  background-color: #ef4444;
+  color: white;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Modals styling */
+.modal {
+  position: fixed;
+  top:0; left:0; width:100%; height:100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+.modal.hidden { display: none; }
+.modal-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+}
+form label { display: block; margin-top: 1rem; font-weight: bold; }
+form input, form select { width: 100%; padding: 0.5rem; margin-top: 0.25rem; box-sizing: border-box; }
+.days-checkboxes { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
+.modal-actions { margin-top: 1.5rem; display: flex; justify-content: flex-end; gap: 1rem; }
+.btn-primary { background: var(--primary-color); color: white; border:none; padding:0.5rem 1rem; border-radius:4px; cursor:pointer;}
+.btn-secondary { background: #e5e7eb; color: black; border:none; padding:0.5rem 1rem; border-radius:4px; cursor:pointer;}
+.hidden { display: none; }

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Day Tracker PWA</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2563eb">
+</head>
+<body>
+  <header>
+    <h1>Daily Routine Tracker</h1>
+    <button id="open-modal-btn">+ Add Task Button</button>
+  </header>
+
+  <main>
+    <!-- Today's View -->
+    <section id="daily-view-section">
+      <h2>Today's Tasks</h2>
+      <div id="buttons-container"></div>
+    </section>
+
+    <!-- History View -->
+    <section id="history-section">
+      <h2>Completion History Log</h2>
+      <div id="history-log"></div>
+    </section>
+  </main>
+
+  <!-- Task Creation Modal -->
+  <div id="task-modal" class="modal hidden">
+    <div class="modal-content">
+      <h3>Create New Task Button</h3>
+      <form id="task-form">
+        <label for="task-title">Task Title:</label>
+        <input type="text" id="task-title" required placeholder="e.g., Take Medicine, Morning Walk">
+
+        <label for="time-type">Time Reference Type:</label>
+        <select id="time-type">
+          <option value="period">Period (Morning, Midday, Night, etc.)</option>
+          <option value="specific">Specific Clock Time</option>
+        </select>
+
+        <div id="period-input-group">
+          <label for="task-period">Period Name:</label>
+          <input type="text" id="task-period" placeholder="e.g., Morning">
+        </div>
+
+        <div id="specific-input-group" class="hidden">
+          <label for="task-time">Clock Time:</label>
+          <input type="time" id="task-time">
+        </div>
+
+        <label for="repeat-type">Repeatability Type:</label>
+        <select id="repeat-type">
+          <option value="days">Specific Days of Week</option>
+          <option value="until-date">Repeat Until a Specific Date</option>
+        </select>
+
+        <div id="days-input-group">
+          <label>Select Days:</label>
+          <div class="days-checkboxes">
+            <label><input type="checkbox" value="0"> Sun</label>
+            <label><input type="checkbox" value="1"> Mon</label>
+            <label><input type="checkbox" value="2"> Tue</label>
+            <label><input type="checkbox" value="3"> Wed</label>
+            <label><input type="checkbox" value="4"> Thu</label>
+            <label><input type="checkbox" value="5"> Fri</label>
+            <label><input type="checkbox" value="6"> Sat</label>
+          </div>
+        </div>
+
+        <div id="until-date-input-group" class="hidden">
+          <label for="repeat-until">Repeat Until Date:</label>
+          <input type="date" id="repeat-until">
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="close-modal-btn" class="btn-secondary">Cancel</button>
+          <button type="submit" class="btn-primary">Save Button</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
