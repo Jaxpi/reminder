@@ -571,7 +571,7 @@ function sendLocalNotification(title, body) {
         body: body,
         icon: 'assets/icon192.png',
         badge: 'assets/icon192.png',
-        vibrate:,
+        vibrate: [200, 100, 200],
         tag: `day-tracker-reminder-${Date.now()}`,
         renotify: true
       });
@@ -612,7 +612,7 @@ function scheduleSpecificTimeReminders() {
             body: task.title,
             icon: 'assets/icon192.png',
             badge: 'assets/icon192.png',
-            vibrate:,
+            vibrate: [200, 100, 200],
             tag: `task-alarm-${task.id}-${todayStr}`,
             renotify: true,
             // Schedules the operating system to fire the notification at this exact timestamp
