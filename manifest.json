@@ -1,6 +1,6 @@
 {
-  "name": "Day Tracker",
-  "short_name": "Day Tracker",
+  "name": "Reminder",
+  "short_name": "Reminder",
   "description": "An offline capable task button dashboard log tracker.",
   "start_url": "index.html",
   "display": "standalone",
@@ -11,13 +11,14 @@
     {
       "src": "assets/icon192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "assets/icon512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
-
