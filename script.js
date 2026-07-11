@@ -565,15 +565,15 @@ window.deleteHistoryItem = function (id) {
 // ==========================================
 
 function sendLocalNotification(title, body) {
-  if ('Notification' in window && Notification.permission === 'granted') {
-    navigator.serviceWorker.ready.then(registration => {
+  if ("Notification" in window && Notification.permission === "granted") {
+    navigator.serviceWorker.ready.then((registration) => {
       registration.showNotification(title, {
         body: body,
-        icon: 'assets/icon192.png',
-        badge: 'assets/icon192.png',
+        icon: "assets/icon192.png",
+        badge: "assets/icon192.png",
         vibrate: [200, 100, 200],
         tag: `day-tracker-reminder-${Date.now()}`,
-        renotify: true
+        renotify: true,
       });
     });
   }
@@ -581,17 +581,20 @@ function sendLocalNotification(title, body) {
 
 // Registers task reminders directly into your phone's native operating system scheduler
 function scheduleSpecificTimeReminders() {
-  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  if (!("Notification" in window) || Notification.permission !== "granted")
+    return;
 
   const today = new Date();
   const todayStr = getLocalDateString(today);
-  const todaysTasks = tasks.filter(t => isTaskScheduledForDate(t, today));
+  const todaysTasks = tasks.filter((t) => isTaskScheduledForDate(t, today));
 
-  todaysTasks.forEach(task => {
-    const isDoneToday = history.some(h => h.taskId === task.id && h.date === todayStr);
+  todaysTasks.forEach((task) => {
+    const isDoneToday = history.some(
+      (h) => h.taskId === task.id && h.date === todayStr,
+    );
     if (isDoneToday) return;
 
-    const timeStr = task.timeValue ? task.timeValue.trim() : '';
+    const timeStr = task.timeValue ? task.timeValue.trim() : "";
     const timeMatch = /^([0-2][0-9]):([0-5][0-9])$/.exec(timeStr);
     if (!timeMatch || timeMatch.length < 3) return;
 
@@ -603,24 +606,35 @@ function scheduleSpecificTimeReminders() {
 
     const msUntilAlarm = alarmTime.getTime() - today.getTime();
 
+    const hasTimestampClass = typeof TimestampTrigger !== "undefined";
+    if (!hasTimestampClass) {
+      setupLocalFallbackTimer(task, msUntilAlarm);
+      return; // Stop here and run the safe fallback so mobile tabs don't crash!
+    }
+
     // If the reminder time is in the future, lock it into the background scheduler
     if (msUntilAlarm > 0) {
-      navigator.serviceWorker.ready.then(registration => {
+      navigator.serviceWorker.ready.then((registration) => {
         // If the device supports system-level NotificationTriggers (Android WebAPKs)
-        if ('showTrigger' in window || (Notification.prototype && 'showTrigger' in Notification.prototype)) {
-          registration.showNotification('Reminder', {
-            body: task.title,
-            icon: 'assets/icon192.png',
-            badge: 'assets/icon192.png',
-            vibrate: [200, 100, 200],
-            tag: `task-alarm-${task.id}-${todayStr}`,
-            renotify: true,
-            // Schedules the operating system to fire the notification at this exact timestamp
-            showTrigger: new TimestampTrigger(alarmTime.getTime())
-          }).catch(err => {
-            // Fallback to a standard alert if trigger registration fails
-            setupLocalFallbackTimer(task, msUntilAlarm);
-          });
+        if (
+          "showTrigger" in window ||
+          (Notification.prototype && "showTrigger" in Notification.prototype)
+        ) {
+          registration
+            .showNotification("Reminder", {
+              body: task.title,
+              icon: "assets/icon192.png",
+              badge: "assets/icon192.png",
+              vibrate: [200, 100, 200],
+              tag: `task-alarm-${task.id}-${todayStr}`,
+              renotify: true,
+              // Schedules the operating system to fire the notification at this exact timestamp
+              showTrigger: new TimestampTrigger(alarmTime.getTime()),
+            })
+            .catch((err) => {
+              // Fallback to a standard alert if trigger registration fails
+              setupLocalFallbackTimer(task, msUntilAlarm);
+            });
         } else {
           // Fallback if browser wrapper doesn't support system alarms natively
           setupLocalFallbackTimer(task, msUntilAlarm);
@@ -634,10 +648,13 @@ function scheduleSpecificTimeReminders() {
 let backupTimersList = [];
 function setupLocalFallbackTimer(task, delayMs) {
   const tId = setTimeout(() => {
-    const dynamicHistory = JSON.parse(localStorage.getItem('pwa_history')) || [];
-    const alreadyDone = dynamicHistory.some(h => h.taskId === task.id && h.date === getLocalDateString(new Date()));
+    const dynamicHistory =
+      JSON.parse(localStorage.getItem("pwa_history")) || [];
+    const alreadyDone = dynamicHistory.some(
+      (h) => h.taskId === task.id && h.date === getLocalDateString(new Date()),
+    );
     if (!alreadyDone) {
-      sendLocalNotification('Reminder', `${task.title}`);
+      sendLocalNotification("Reminder", `${task.title}`);
     }
   }, delayMs);
   backupTimersList.push(tId);
@@ -646,17 +663,17 @@ function setupLocalFallbackTimer(task, delayMs) {
 function updateAppBadgeCount() {
   const today = new Date();
   const todayStr = getLocalDateString(today);
-  const todaysTasks = tasks.filter(t => isTaskScheduledForDate(t, today));
-  
-  const remainingCount = todaysTasks.filter(task => {
-    return !history.some(h => h.taskId === task.id && h.date === todayStr);
+  const todaysTasks = tasks.filter((t) => isTaskScheduledForDate(t, today));
+
+  const remainingCount = todaysTasks.filter((task) => {
+    return !history.some((h) => h.taskId === task.id && h.date === todayStr);
   }).length;
 
-  if ('setAppBadge' in navigator) {
+  if ("setAppBadge" in navigator) {
     if (remainingCount > 0) {
-      navigator.setAppBadge(remainingCount).catch(err => console.log(err));
+      navigator.setAppBadge(remainingCount).catch((err) => console.log(err));
     } else {
-      navigator.clearAppBadge().catch(err => console.log(err));
+      navigator.clearAppBadge().catch((err) => console.log(err));
     }
   }
 }
