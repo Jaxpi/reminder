@@ -1,6 +1,6 @@
 {
-  "name": "Daily Routine Task Tracker",
-  "short_name": "DayTracker",
+  "name": "Day Tracker",
+  "short_name": "Day Tracker",
   "description": "An offline capable task button dashboard log tracker.",
   "start_url": "index.html",
   "display": "standalone",

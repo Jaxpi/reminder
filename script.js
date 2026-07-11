@@ -561,106 +561,102 @@ window.deleteHistoryItem = function (id) {
 };
 
 // ==========================================
-// 8. TIME-BASED REMINDER ALARM CONTROLLERS
+// 8. SYSTEM-LEVEL TIME-BASED ALARM CODES
 // ==========================================
 
-// Global array registry to hold background active countdown timers
-let activeAlarmTimers = [];
-
 function sendLocalNotification(title, body) {
-  if ("Notification" in window && Notification.permission === "granted") {
-    navigator.serviceWorker.ready.then((registration) => {
+  if ('Notification' in window && Notification.permission === 'granted') {
+    navigator.serviceWorker.ready.then(registration => {
       registration.showNotification(title, {
         body: body,
-        icon: "assets/icon192.png",
-        badge: "assets/icon192.png",
-        vibrate: [200, 100, 200],
-        tag: `day-tracker-reminder-${Date.now()}`, // Unique tag lets multiple distinct reminders pile up nicely
-        renotify: true,
+        icon: 'assets/icon192.png',
+        badge: 'assets/icon192.png',
+        vibrate:,
+        tag: `day-tracker-reminder-${Date.now()}`,
+        renotify: true
       });
     });
   }
 }
 
-// Scans today's tasks and schedules precise text-message style alerts
+// Registers task reminders directly into your phone's native operating system scheduler
 function scheduleSpecificTimeReminders() {
-  if (!("Notification" in window) || Notification.permission !== "granted")
-    return;
-
-  // 1. Clear out all existing timers to avoid duplicate stacking alerts
-  activeAlarmTimers.forEach((timerId) => clearTimeout(timerId));
-  activeAlarmTimers = [];
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
   const today = new Date();
   const todayStr = getLocalDateString(today);
+  const todaysTasks = tasks.filter(t => isTaskScheduledForDate(t, today));
 
-  // 2. Filter down to tasks scheduled strictly for today
-  const todaysTasks = tasks.filter((t) => isTaskScheduledForDate(t, today));
-
-  todaysTasks.forEach((task) => {
-    const isDoneToday = history.some(
-      (h) => h.taskId === task.id && h.date === todayStr,
-    );
+  todaysTasks.forEach(task => {
+    const isDoneToday = history.some(h => h.taskId === task.id && h.date === todayStr);
     if (isDoneToday) return;
 
-    // Safe Check: Ensure task.timeValue exists before trying to trim it
-    const timeStr = task.timeValue ? task.timeValue.trim() : "";
-
-    // Match the 24hr format pattern
+    const timeStr = task.timeValue ? task.timeValue.trim() : '';
     const timeMatch = /^([0-2][0-9]):([0-5][0-9])$/.exec(timeStr);
-
-    // FIXED SAFETY FALLBACK: If it doesn't match perfectly on mobile,
-    // RETURN gracefully instead of letting the script crash!
     if (!timeMatch || timeMatch.length < 3) return;
 
     const hours = parseInt(timeMatch[1], 10);
     const minutes = parseInt(timeMatch[2], 10);
 
-    // Create a precise target date object matching today's calendar sheet
     const alarmTime = new Date();
     alarmTime.setHours(hours, minutes, 0, 0);
 
     const msUntilAlarm = alarmTime.getTime() - today.getTime();
 
-    // 3. If the reminder time is still in the future, set the alarm trigger
+    // If the reminder time is in the future, lock it into the background scheduler
     if (msUntilAlarm > 0) {
-      const timerId = setTimeout(() => {
-        // Double check completion state one last time right before firing banner
-        const stillActiveTasks =
-          JSON.parse(localStorage.getItem("pwa_tasks")) || [];
-        const dynamicHistory =
-          JSON.parse(localStorage.getItem("pwa_history")) || [];
-        const taskStillExists = stillActiveTasks.some((t) => t.id === task.id);
-        const alreadyDoneNow = dynamicHistory.some(
-          (h) =>
-            h.taskId === task.id && h.date === getLocalDateString(new Date()),
-        );
-
-        if (taskStillExists && !alreadyDoneNow) {
-          sendLocalNotification("Reminder", `${task.title}`);
+      navigator.serviceWorker.ready.then(registration => {
+        // If the device supports system-level NotificationTriggers (Android WebAPKs)
+        if ('showTrigger' in window || (Notification.prototype && 'showTrigger' in Notification.prototype)) {
+          registration.showNotification('Reminder', {
+            body: task.title,
+            icon: 'assets/icon192.png',
+            badge: 'assets/icon192.png',
+            vibrate:,
+            tag: `task-alarm-${task.id}-${todayStr}`,
+            renotify: true,
+            // Schedules the operating system to fire the notification at this exact timestamp
+            showTrigger: new TimestampTrigger(alarmTime.getTime())
+          }).catch(err => {
+            // Fallback to a standard alert if trigger registration fails
+            setupLocalFallbackTimer(task, msUntilAlarm);
+          });
+        } else {
+          // Fallback if browser wrapper doesn't support system alarms natively
+          setupLocalFallbackTimer(task, msUntilAlarm);
         }
-      }, msUntilAlarm);
-
-      activeAlarmTimers.push(timerId);
+      });
     }
   });
 }
 
-// Simple Home Screen Badge maintenance (Updates dot count silently with no drop-down banners)
+// Clean fallback countdown tracker container loop
+let backupTimersList = [];
+function setupLocalFallbackTimer(task, delayMs) {
+  const tId = setTimeout(() => {
+    const dynamicHistory = JSON.parse(localStorage.getItem('pwa_history')) || [];
+    const alreadyDone = dynamicHistory.some(h => h.taskId === task.id && h.date === getLocalDateString(new Date()));
+    if (!alreadyDone) {
+      sendLocalNotification('Reminder', `${task.title}`);
+    }
+  }, delayMs);
+  backupTimersList.push(tId);
+}
+
 function updateAppBadgeCount() {
   const today = new Date();
   const todayStr = getLocalDateString(today);
-  const todaysTasks = tasks.filter((t) => isTaskScheduledForDate(t, today));
-
-  const remainingCount = todaysTasks.filter((task) => {
-    return !history.some((h) => h.taskId === task.id && h.date === todayStr);
+  const todaysTasks = tasks.filter(t => isTaskScheduledForDate(t, today));
+  
+  const remainingCount = todaysTasks.filter(task => {
+    return !history.some(h => h.taskId === task.id && h.date === todayStr);
   }).length;
 
-  if ("setAppBadge" in navigator) {
+  if ('setAppBadge' in navigator) {
     if (remainingCount > 0) {
-      navigator.setAppBadge(remainingCount).catch((err) => console.log(err));
+      navigator.setAppBadge(remainingCount).catch(err => console.log(err));
     } else {
-      navigator.clearAppBadge().catch((err) => console.log(err));
+      navigator.clearAppBadge().catch(err => console.log(err));
     }
   }
 }

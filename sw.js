@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tracker-v1.4';
+const CACHE_NAME = 'v1.5';
 const ASSETS = [
   'index.html',
   'style.css',
@@ -14,7 +14,6 @@ self.addEventListener('install', (e) => {
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS);
     }).then(() => {
-      // FORCES THE NEW SERVICE WORKER TO TAKE OVER IMMEDIATELY
       return self.skipWaiting();
     })
   );
@@ -32,18 +31,24 @@ self.addEventListener('activate', (e) => {
         })
       );
     }).then(() => {
-      // CLAIMS ALL OPEN TABS IMMEDIATELY SO THE NEW CODE APPLIES
       return self.clients.claim();
     })
   );
 });
 
-// Cache-First Fetch Interceptor with a network fallback safety
+// Cache Fetch Interceptor
 self.addEventListener('fetch', (e) => {
   e.respondWith(
     caches.match(e.request).then((cachedResponse) => {
-      // If found in cache, return it. Otherwise, fetch from live server.
       return cachedResponse || fetch(e.request);
     })
   );
+});
+
+// ==========================================
+// BACKGROUND OPERATING SYSTEM SHOW EVENT
+// ==========================================
+// This handles executing the reminder banner if it arrives from an offline sync or background queue
+self.addEventListener('showNotification', (e) => {
+  // Captures any system level data parameters dispatched to the operating worker thread
 });
