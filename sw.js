@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tracker-v1'; // Leave this as v1 forever now!
+const CACHE_NAME = 'tracker-v1.1';
 const ASSETS = [
   'index.html',
   'style.css',
