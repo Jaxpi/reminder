@@ -300,29 +300,34 @@ function renderDailyButtons() {
   // Keep arrays sorted according to user drag order indices
   tasks.sort((a, b) => (a.order || 0) - (b.order || 0));
 
-  tasks.forEach((task) => {
-    if (!isTaskScheduledForDate(task, today)) return;
+// Replace that loop check with this updated bypass logic:
+tasks.forEach(task => {
+  // If Edit Mode is OFF, apply the date scheduler. If Edit Mode is ON, skip the filter and show it anyway!
+  if (!isEditModeActive && !isTaskScheduledForDate(task, today)) return;
 
-    const btn = document.createElement("div");
-    btn.className = "task-btn";
-    btn.setAttribute("data-id", task.id);
+  const btn = document.createElement('div');
+  btn.className = 'task-btn';
+  btn.setAttribute('data-id', task.id);
+  
+  // Disable dragging mechanics if user is explicitly editing configurations
+  if (!isEditModeActive) {
+    btn.setAttribute('draggable', 'true');
+  } else {
+    btn.classList.add('editing-shake');
+  }
+  
+  const isDoneToday = history.some(h => h.taskId === task.id && h.date === todayStr);
+  btn.classList.add(isDoneToday ? 'completed' : 'active');
 
-    // Disable dragging mechanics if user is explicitly editing configurations
-    if (!isEditModeActive) {
-      btn.setAttribute("draggable", "true");
-    } else {
-      btn.classList.add("editing-shake");
-    }
+  // If a future task is being displayed because of Edit Mode, let's append a subtle tag so you know it's a future item
+  const displayTime = (isEditModeActive && task.startDate && todayStr < task.startDate) 
+    ? `${task.timeValue} (Starts: ${task.startDate})` 
+    : task.timeValue;
 
-    const isDoneToday = history.some(
-      (h) => h.taskId === task.id && h.date === todayStr,
-    );
-    btn.classList.add(isDoneToday ? "completed" : "active");
-
-    btn.innerHTML = `
-      <div>${task.title}</div>
-      <div class="time-lbl">${task.timeValue}</div>
-    `;
+  btn.innerHTML = `
+    <div>${task.title}</div>
+    <div class="time-lbl">${displayTime}</div>
+  `;
 
     // Dynamic Touch Matrix Redirector routing click behaviors
     btn.addEventListener("click", () => {
