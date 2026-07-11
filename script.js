@@ -102,7 +102,6 @@ notificationToggleBtn.addEventListener('click', () => {
       notificationToggleBtn.innerText = '🔔 On';
       notificationToggleBtn.style.backgroundColor = '#10b981';
       notificationToggleBtn.style.color = 'white';
-      sendLocalNotification('Notifications Enabled', 'Day Tracker will keep you updated on your buttons!');
       updateAppBadgeCount();
     } else {
       notificationToggleBtn.innerText = '🔔 Off';
@@ -422,8 +421,8 @@ function renderDailyButtons() {
     initDragAndDropListeners();
   }
 
-  // Live Sync hook update for Home Screen Badge counters
   updateAppBadgeCount();
+  scheduleSpecificTimeReminders();
 }
 
 function initDragAndDropListeners() {
@@ -486,10 +485,12 @@ window.deleteHistoryItem = function(id) {
 };
 
 // ==========================================
-// 8. NATIVE NOTIFICATION & BADGE CONTROLLERS
+// 8. TIME-BASED REMINDER ALARM CONTROLLERS
 // ==========================================
 
-// Locate this block near the bottom of script.js and update the vibrate line:
+// Global array registry to hold background active countdown timers
+let activeAlarmTimers = [];
+
 function sendLocalNotification(title, body) {
   if ('Notification' in window && Notification.permission === 'granted') {
     navigator.serviceWorker.ready.then(registration => {
@@ -497,39 +498,81 @@ function sendLocalNotification(title, body) {
         body: body,
         icon: 'assets/icon192.png',
         badge: 'assets/icon192.png',
-        vibrate: [200, 100, 200], // FIXED: Added standard haptic vibration pattern array
-        tag: 'day-tracker-alert',
+        vibrate:,
+        tag: `day-tracker-reminder-${Date.now()}`, // Unique tag lets multiple distinct reminders pile up nicely
         renotify: true
       });
     });
   }
 }
 
-function updateAppBadgeCount() {
+// Scans today's tasks and schedules precise text-message style alerts
+function scheduleSpecificTimeReminders() {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+  // 1. Clear out all existing timers to avoid duplicate stacking alerts
+  activeAlarmTimers.forEach(timerId => clearTimeout(timerId));
+  activeAlarmTimers = [];
+
   const today = new Date();
   const todayStr = getLocalDateString(today);
 
+  // 2. Filter down to tasks scheduled strictly for today
+  const todaysTasks = tasks.filter(t => isTaskScheduledForDate(t, today));
+
+  todaysTasks.forEach(task => {
+    // Skip if the task has already been completed today
+    const isDoneToday = history.some(h => h.taskId === task.id && h.date === todayStr);
+    if (isDoneToday) return;
+
+    // Check if the time value is a valid 24hr format string (e.g., "14:30" or "08:00")
+    const timeMatch = /^([0-2][0-9]):([0-5][0-9])$/.exec(task.timeValue.trim());
+    if (!timeMatch) return; // Skip text tags like "Morning" or "After Waking"
+
+    const hours = parseInt(timeMatch[1], 10);
+    const minutes = parseInt(timeMatch[2], 10);
+
+    // Create a precise target date object matching today's calendar sheet
+    const alarmTime = new Date();
+    alarmTime.setHours(hours, minutes, 0, 0);
+
+    const msUntilAlarm = alarmTime.getTime() - today.getTime();
+
+    // 3. If the reminder time is still in the future, set the alarm trigger
+    if (msUntilAlarm > 0) {
+      const timerId = setTimeout(() => {
+        // Double check completion state one last time right before firing banner
+        const stillActiveTasks = JSON.parse(localStorage.getItem('pwa_tasks')) || [];
+        const dynamicHistory = JSON.parse(localStorage.getItem('pwa_history')) || [];
+        const taskStillExists = stillActiveTasks.some(t => t.id === task.id);
+        const alreadyDoneNow = dynamicHistory.some(h => h.taskId === task.id && h.date === getLocalDateString(new Date()));
+
+        if (taskStillExists && !alreadyDoneNow) {
+          sendLocalNotification('Reminder', `${task.title}`);
+        }
+      }, msUntilAlarm);
+
+      activeAlarmTimers.push(timerId);
+    }
+  });
+}
+
+// Simple Home Screen Badge maintenance (Updates dot count silently with no drop-down banners)
+function updateAppBadgeCount() {
+  const today = new Date();
+  const todayStr = getLocalDateString(today);
   const todaysTasks = tasks.filter(t => isTaskScheduledForDate(t, today));
   
   const remainingCount = todaysTasks.filter(task => {
     return !history.some(h => h.taskId === task.id && h.date === todayStr);
   }).length;
 
-  // Manage Home Screen Icon Dot Count
   if ('setAppBadge' in navigator) {
     if (remainingCount > 0) {
       navigator.setAppBadge(remainingCount).catch(err => console.log(err));
     } else {
       navigator.clearAppBadge().catch(err => console.log(err));
     }
-  }
-
-  // Manage Banner Notification Updates
-  if (remainingCount > 0 && Notification.permission === 'granted') {
-    const messageText = remainingCount === 1 
-      ? `You have 1 remaining task left to track today.` 
-      : `You have ${remainingCount} tasks left to complete today.`;
-    sendLocalNotification('Day Tracker Status', messageText);
   }
 }
 
